@@ -1,0 +1,44 @@
+rule_files:
+  - prometheus.rules.yml
+
+evaluation_interval: 1m
+
+tests:
+  - interval: 1h
+    input_series:
+      - series: 'http_server_requests_seconds_count{method="GET",status="200",uri="/greeting"}'
+        values: '0 0 0 0 1x24 2'
+
+    alert_rule_test:
+      - eval_time: 1h
+        # no alert
+      - eval_time: 27h
+        # no alert
+      - eval_time: 28h
+        alertname: GreetingsMissing
+        exp_alerts:
+          - exp_labels:
+              method: GET
+              status: 200
+              uri: /greeting
+              severity: critical
+            exp_annotations:
+              summary: "Endpoint  down"
+              description: " of job  has been down for more than 1 minutes."
+      - eval_time: 29h
+        # no alert
+
+    promql_expr_test:
+      - expr: increase(http_server_requests_seconds_count{method="GET",status="200",uri="/greeting"}[12h])<1
+        eval_time: 1h
+        exp_samples:
+          - labels: '{method="GET",status="200",uri="/greeting"}'
+            value: 0
+      - expr: increase(http_server_requests_seconds_count{method="GET",status="200",uri="/greeting"}[12h])<1
+        eval_time: 4h
+        # nil result
+      - expr: increase(http_server_requests_seconds_count{method="GET",status="200",uri="/greeting"}[12h])<1
+        eval_time: 16h
+        exp_samples:
+          - labels: '{method="GET",status="200",uri="/greeting"}'
+            value: 0

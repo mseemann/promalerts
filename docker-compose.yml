@@ -1,0 +1,29 @@
+version: '3.7'
+
+services:
+  prometheus:
+    image: prom/prometheus
+    depends_on:
+      - alertmanager
+    ports:
+      - 9090:9090
+    volumes:
+      - ${PWD}/opt/prometheus:/etc/prometheus/:ro
+
+  alertmanager:
+    image: prom/alertmanager
+    volumes:
+      -  ${PWD}//opt/alertmanager/config:/prometheus:ro
+    command:
+      - '--config.file=/prometheus/alertmanager.yml'
+    ports:
+      - 9093:9093
+
+  grafana:
+    image: grafana/grafana
+    ports:
+      - 3000:3000
+    volumes:
+      - ${PWD}/opt/grafana/provisioning:/etc/grafana/provisioning:ro
+      - ${PWD}/opt/grafana/dashboards:/var/lib/grafana/dashboards:ro
+
